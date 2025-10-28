@@ -1,0 +1,28 @@
+# Custom
+build/
+dist/
+
+# Byte-compiled / Optimized / DLL files
+__pycache__/
+*.py[codz]
+*$py.class
+
+# Environments
+.env
+.envrc
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.idea/
+.vscode/
+
+# MyPy Cache
+.mypy_cache/
+
+# Rope
+.ropeproject

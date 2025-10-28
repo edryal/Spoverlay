@@ -1,0 +1,9 @@
+[project]
+name = "spoverlay"
+version = "0.0.1"
+description = "Spotify Overlay (Qt)"
+requires-python = ">=3.10"
+
+[tool.black]
+line-length = 160
+target-version = ["py311", "py312"]
