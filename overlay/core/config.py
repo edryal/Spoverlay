@@ -64,7 +64,7 @@ def load_config() -> AppConfig:
 
     poll_interval_ms = int(os.environ.get("POLL_INTERVAL_MS", "1000"))
     app_directory = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-    data_directory = _user_data_dir("overlay")
+    data_directory = _user_data_dir("Spoverlay")
 
     return AppConfig(
         spotify=SpotifyConfig(client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri),
