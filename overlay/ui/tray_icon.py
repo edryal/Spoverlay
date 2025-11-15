@@ -7,7 +7,7 @@ from overlay.ui.overlay_window import OverlayWindow
 
 
 class TrayIcon(QSystemTrayIcon):
-    def __init__(self, app_name: str, app_icon_path: str, window: OverlayWindow, parent=None):
+    def __init__(self, app_name: str, app_icon_path: str, window: OverlayWindow, parent=None):  # pyright: ignore[reportMissingParameterType]
         super().__init__(parent)
         self._log = logging.getLogger("overlay.ui.tray")
         self._window = window
@@ -16,9 +16,10 @@ class TrayIcon(QSystemTrayIcon):
         self.setToolTip(app_name)
         self._user_wants_visible = window.isVisible()
 
+        self._toggle_action = QAction("Show Overlay", self)
         menu = self._build_menu()
         self.setContextMenu(menu)
-        self.activated.connect(self._on_activated)
+        _ = self.activated.connect(self._on_activated)
 
         self._window.user_visibility_state = self._user_wants_visible
         self.show()
@@ -26,18 +27,17 @@ class TrayIcon(QSystemTrayIcon):
 
     def _build_menu(self) -> QMenu:
         menu = QMenu()
-        self._toggle_action = QAction("Show Overlay", self)
         self._toggle_action.setCheckable(True)
         self._toggle_action.setChecked(self._user_wants_visible)
-        self._toggle_action.triggered.connect(self._on_toggle_visibility_from_menu)
+        _ = self._toggle_action.triggered.connect(self._on_toggle_visibility_from_menu)
         menu.addAction(self._toggle_action)
-        menu.addSeparator()
+        _ = menu.addSeparator()
         quit_action = QAction("Quit", self)
-        quit_action.triggered.connect(QApplication.instance().quit)
+        _= quit_action.triggered.connect(QApplication.instance().quit)
         menu.addAction(quit_action)
         return menu
 
-    def _on_activated(self, reason):
+    def _on_activated(self, reason):  # pyright: ignore[reportMissingParameterType]
         if reason == QSystemTrayIcon.ActivationReason.Trigger:
             self.toggle_visibility()
 

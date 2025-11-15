@@ -52,7 +52,7 @@ def main() -> None:
         log.exception("Failed to initialize Spotify client: %s", e)
         sys.exit(1)
 
-    sp_client.now_playing_updated.connect(win.set_now_playing)
+    _ =  sp_client.now_playing_updated.connect(win.set_now_playing)  # pyright: ignore[reportAny]
     sp_client.start_polling()
     log.info("Started polling using the SpotifyClient")
 
@@ -63,15 +63,15 @@ def main() -> None:
         sp_client.stop()
         log.info("Shutdown complete.")
 
-    app.aboutToQuit.connect(on_about_to_quit)
+    _ = app.aboutToQuit.connect(on_about_to_quit)
 
     def signal_handler(*_args):
         """This function handles OS signals like Ctrl+C."""
         log.info("Shutdown signal received, quitting application.")
         app.quit()
 
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
+    _ = signal.signal(signal.SIGINT, signal_handler)
+    _ = signal.signal(signal.SIGTERM, signal_handler)
 
     log.info("Entering Qt main loop...")
     sys.exit(app.exec())

@@ -4,6 +4,7 @@ import logging
 import os
 import io
 import sys
+from typing import override
 import urllib.request
 
 from PIL import Image
@@ -19,7 +20,7 @@ from overlay.core.state import NowPlaying
 
 if sys.platform.startswith("linux"):
     try:
-        from Xlib import X, display
+        from Xlib import X, display  # pyright: ignore[reportUnusedImport]
         from Xlib.ext import shape
 
         has_xlib = True
@@ -58,11 +59,12 @@ def _make_window_clickthrough_x11(qt_window: QWidget):
 class ArtLoader(QThread):
     art_loaded = Signal(QPixmap)
 
-    def __init__(self, url: str, size: int, parent=None):
+    def __init__(self, url: str, size: int, parent=None):  # pyright: ignore[reportMissingParameterType]
         super().__init__(parent)
         self._url, self._size = url, size
         self.log = logging.getLogger("overlay.art-loader")
 
+    @override
     def run(self):
         try:
             req = urllib.request.Request(self._url, headers={"User-Agent": "SpotifyOverlay/1.0"})
@@ -198,10 +200,13 @@ class OverlayWindow(QWidget):
         screen = self.screen()
         if not screen:
             return
+
         geometry = screen.availableGeometry()
         win_rect = self.frameGeometry()
         margin = self._config.ui.margin
-        if pos := self._config.ui.position == "top-left":
+
+        pos = self._config.ui.position
+        if pos == "top-left":
             x, y = geometry.x() + margin, geometry.y() + margin
         elif pos == "top-right":
             x, y = geometry.x() + geometry.width() - win_rect.width() - margin, geometry.y() + margin
@@ -209,6 +214,7 @@ class OverlayWindow(QWidget):
             x, y = geometry.x() + margin, geometry.y() + geometry.height() - win_rect.height() - margin
         else:
             x, y = geometry.x() + geometry.width() - win_rect.width() - margin, geometry.y() + geometry.height() - win_rect.height() - margin
+
         self.move(x, y)
         self._is_positioned = True
         self.log.info(f"Application positioned window at ({x}, {y})")
