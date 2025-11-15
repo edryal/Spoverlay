@@ -29,6 +29,14 @@ if sys.platform.startswith("linux"):
 else:
     has_xlib = False
 
+if sys.platform == "win32":
+    try:
+        import win32gui, win32con
+        has_win32 = True
+    except ImportError:
+        has_win32 = False
+else:
+    has_win32 = False
 
 def _is_wayland() -> bool:
     if not sys.platform.startswith("linux"):
@@ -55,6 +63,18 @@ def _make_window_clickthrough_x11(qt_window: QWidget):
     except Exception as e:
         log.error(f"Failed to set X11 click-through properties: {e}")
 
+def _make_window_clickthrough_windows(qt_window: QWidget):
+    if not has_win32 or not qt_window.winId():
+        return
+    log = logging.getLogger("overlay.ui.windows")
+    try:
+        hwnd = int(qt_window.winId())
+        style = win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE)
+        new_style = style | win32con.WS_EX_LAYERED | win32con.WS_EX_TRANSPARENT
+        win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, new_style)
+        log.info("Successfully configured click-through for Windows.")
+    except Exception as e:
+        log.error(f"Failed to set Windows click-through properties: {e}")
 
 class ArtLoader(QThread):
     art_loaded = Signal(QPixmap)
@@ -134,7 +154,6 @@ class OverlayWindow(QWidget):
         self.setWindowFlags(Qt.WindowType.Tool | Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
-        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setFixedSize(330, 82)
 
@@ -180,14 +199,19 @@ class OverlayWindow(QWidget):
         _ = self._progress_timer.timeout.connect(self._progress_tick)
 
     def _setup_click_through(self):
-        if sys.platform.startswith("linux") and not _is_wayland():
-            self.log.info("Applying click-through for X11.")
-            self.show()
+        self.show()
+
+        if sys.platform == "win32":
+            _make_window_clickthrough_windows(self)
+        elif sys.platform.startswith("linux") and not _is_wayland():
             _make_window_clickthrough_x11(self)
-            if not self._debug:
-                self.hide()
         else:
             self.log.info(f"Relying on WA_TransparentForMouseEvents on {sys.platform}.")
+            self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+
+        # Hide the window again if it's not supposed to be visible initially
+        if not self._debug and (self._last_np is None or not self._last_np.is_playing):
+            self.hide()
 
     def _should_app_position_window(self) -> bool:
         if sys.platform.startswith("linux"):
@@ -254,6 +278,7 @@ class OverlayWindow(QWidget):
                 self._stop_progress_timer()
 
         if not self.user_visibility_state:
+            self.hide()
             return
 
         if self._is_playing and np:
