@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QApplication
 
 from overlay.core.config import load_config
 from overlay.core.spotify_client import SpotifyClient
+from overlay.core.hotkey_manager import GlobalHotkeyManager
 from overlay.ui.overlay_window import OverlayWindow
 from overlay.ui.tray_icon import TrayIcon
 
@@ -37,11 +38,12 @@ def main() -> None:
         log.exception("Failed to create overlay window: %s", e)
         sys.exit(1)
 
+    tray_icon = None
     try:
         icon_path = os.path.join(config.app_directory, "assets", "tray-icon.jpg")
         if not os.path.exists(icon_path):
             log.warning(f"Icon not found at {icon_path}, tray may not have an icon.")
-        _ = TrayIcon("Spotify Overlay", icon_path, win)
+        tray_icon = TrayIcon("Spotify Overlay", icon_path, win)
     except Exception as e:
         log.exception("Failed to create tray icon: %s", e)
 
@@ -52,8 +54,21 @@ def main() -> None:
         log.exception("Failed to initialize Spotify client: %s", e)
         sys.exit(1)
 
+    try:
+        if tray_icon is None:
+            log.info("Failed to initialize global hotkey because the Tray Icon failed to initialize")
+            return
+
+        hotkey_manager = GlobalHotkeyManager()
+        log.info("Successfully initialized GlobalHotkeyManager")
+    except Exception as e:
+        log.exception("Failed to initialize GlobalHotkeyManager: %s", e)
+        sys.exit(1)
+
     _ =  sp_client.now_playing_updated.connect(win.set_now_playing)  # pyright: ignore[reportAny]
+    hotkey_manager.hotkey_triggered.connect(tray_icon.toggle_visibility)
     sp_client.start_polling()
+    hotkey_manager.start_listener()
     log.info("Started polling using the SpotifyClient")
 
     # --- Improved Shutdown Logic ---
@@ -64,6 +79,7 @@ def main() -> None:
         log.info("Shutdown complete.")
 
     _ = app.aboutToQuit.connect(on_about_to_quit)
+    _ = app.aboutToQuit.connect(hotkey_manager.stop_listener)
 
     def signal_handler(*_args):
         """This function handles OS signals like Ctrl+C."""
