@@ -30,6 +30,11 @@ Source/Activate the venv (choose the script that matches your system)
 source venv/bin/activate
 ```
 
+On Windows
+```bash
+venv\Scripts\Activate.ps1
+```
+
 Install all the dependencies using pip
 ```bash
 pip install python-dotenv spotipy PySide6 PySide6-stubs python-xlib types-python-xlib pyinstaller Pillow
