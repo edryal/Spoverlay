@@ -8,7 +8,8 @@ from overlay.ui.overlay_window import OverlayWindow
 
 class TrayIcon(QSystemTrayIcon):
     def __init__(self, app_name: str, app_icon_path: str, window: OverlayWindow, parent=None):  # pyright: ignore[reportMissingParameterType]
-        super().__init__(parent)
+        app_instance = QApplication.instance()
+        super().__init__(app_instance)
         self._log = logging.getLogger("overlay.ui.tray")
         self._window = window
 
