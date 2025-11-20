@@ -47,7 +47,12 @@ venv\Scripts\Activate.ps1
 
 ### Install all the dependencies using pip
 ```bash
-pip install python-dotenv spotipy PySide6 PySide6-stubs pywin32 python-xlib types-python-xlib pyinstaller Pillow
+pip install python-dotenv spotipy PySide6 PySide6-stubs pynput python-xlib types-python-xlib pyinstaller Pillow
+```
+
+## Install pywin32 separately if you're on Windows
+```bash
+pip install pywin32
 ```
 
 # Configuration

@@ -26,14 +26,14 @@ def main() -> None:
 
     try:
         config = load_config()
-        log.info("Successfully loaded configuration")
+        log.info("Configuration from .env and Environment Variables has been loaded.")
     except Exception as e:
-        log.exception("Failed to load config: %s", e)
+        log.exception("Failed to load configuration: %s", e)
         sys.exit(1)
 
     try:
         win = OverlayWindow(config)
-        log.info("Successfully initialized OverlayWindow")
+        log.info("Overlay window has been created.")
     except Exception as e:
         log.exception("Failed to create overlay window: %s", e)
         sys.exit(1)
@@ -44,42 +44,50 @@ def main() -> None:
         if not os.path.exists(icon_path):
             log.warning(f"Icon not found at {icon_path}, tray may not have an icon.")
         tray_icon = TrayIcon("Spotify Overlay", icon_path, win)
+        log.info("System tray icon Successfully created.")
     except Exception as e:
-        log.exception("Failed to create tray icon: %s", e)
+        log.exception("Failed to create the tray icon: %s", e)
 
     try:
         sp_client = SpotifyClient(config)
-        log.info("Successfully initialized SpotifyClient")
+        log.info("Spotify client connected Successfully.")
     except Exception as e:
-        log.exception("Failed to initialize Spotify client: %s", e)
+        log.exception("Failed to initialize the spotify client: %s", e)
         sys.exit(1)
 
     try:
         if tray_icon is None:
-            log.info("Failed to initialize global hotkey because the Tray Icon failed to initialize")
+            log.warning("Failed to add the global hotkey because the Tray Icon failed to initialize.")
             return
 
         hotkey_manager = GlobalHotkeyManager()
-        log.info("Successfully initialized GlobalHotkeyManager")
+        log.info("Global hotkey has been configured.")
     except Exception as e:
         log.exception("Failed to initialize GlobalHotkeyManager: %s", e)
         sys.exit(1)
 
-    _ =  sp_client.now_playing_updated.connect(win.set_now_playing)  # pyright: ignore[reportAny]
-    hotkey_manager.hotkey_triggered.connect(tray_icon.toggle_visibility)
-    sp_client.start_polling()
-    hotkey_manager.start_listener()
-    log.info("Started polling using the SpotifyClient")
+    _ = sp_client.now_playing_updated.connect(win.set_now_playing)
+    _ = hotkey_manager.hotkey_triggered.connect(tray_icon.toggle_visibility)
+    log.info("Listening for now_playing and toggle_visibility events.")
 
-    # --- Improved Shutdown Logic ---
+    sp_client.start_polling()
+    log.info("Started polling using the the spotify client")
+
+    hotkey_manager.start_listener()
+    log.info("Started the hotkey listener.")
+
     def on_about_to_quit():
-        """This function handles the actual cleanup."""
-        log.info("Stopping Spotify client...")
+        log.info("Stopping the spotify client...")
         sp_client.stop()
+        log.info("Stopped the spotify client...")
+
+        log.info("Stopping the hotkey listener...")
+        hotkey_manager.stop_listener()
+        log.info("Stopped the hotkey listener...")
+
         log.info("Shutdown complete.")
 
     _ = app.aboutToQuit.connect(on_about_to_quit)
-    _ = app.aboutToQuit.connect(hotkey_manager.stop_listener)
 
     def signal_handler(*_args):
         """This function handles OS signals like Ctrl+C."""
@@ -88,6 +96,7 @@ def main() -> None:
 
     _ = signal.signal(signal.SIGINT, signal_handler)
     _ = signal.signal(signal.SIGTERM, signal_handler)
+    log.info("Listening for SIGINT and SIGTERM signals.")
 
     log.info("Entering Qt main loop...")
     sys.exit(app.exec())

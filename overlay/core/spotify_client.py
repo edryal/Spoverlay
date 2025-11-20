@@ -6,7 +6,7 @@ import time
 from typing import final
 
 import spotipy
-from spotipy.oauth2 import SpotifyOAuth
+from spotipy.oauth2 import SpotifyPKCE
 from PySide6.QtCore import QObject, Signal
 
 from overlay.core.config import AppConfig
@@ -17,20 +17,26 @@ from overlay.core.state import NowPlaying
 class SpotifyClient(QObject):
     now_playing_updated = Signal(object)
 
-    def __init__(self, config: AppConfig, parent=None):
-        super().__init__(parent)
+    def __init__(self, config: AppConfig):
+        super().__init__()
         self._config = config
+
+        # Limit the scope of the client
+        # So that we don't fuck up anything
         scope = "user-read-playback-state user-read-currently-playing"
+
         cache_path = os.path.join(config.data_directory, "spotify_token_cache")
         os.makedirs(config.data_directory, exist_ok=True)
-        auth = SpotifyOAuth(
+
+        # SpotifyPKCE is used since it doesn't require a secret
+        # Also for some reason the auth link that is generated
+        # when you start the app for the first time works more consistently
+        auth = SpotifyPKCE(
             client_id=config.spotify.client_id,
-            client_secret=config.spotify.client_secret,
             redirect_uri=config.spotify.redirect_uri,
             scope=scope,
             cache_path=cache_path,
             open_browser=True,
-            show_dialog=False,
         )
         self._sp = spotipy.Spotify(auth_manager=auth)
         self._thread: threading.Thread | None = None
@@ -38,6 +44,12 @@ class SpotifyClient(QObject):
         self._last: NowPlaying | None = None
         self._interval = max(0.25, config.poll_interval_ms / 1000.0)
 
+    """
+    Get all the data from the currently playing track.
+    Two attepts to fetch before it gives up.
+
+    This function most probably needs a refactor.
+    """
     def get_current(self) -> NowPlaying | None:
         data = None
         try:

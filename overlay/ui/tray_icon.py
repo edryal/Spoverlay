@@ -3,16 +3,22 @@
 import logging
 from PySide6.QtGui import QIcon, QAction
 from PySide6.QtWidgets import QApplication, QSystemTrayIcon, QMenu
+from overlay.core import config
 from overlay.ui.overlay_window import OverlayWindow
+
+
+"""
+Creates the tray icon with toggle functionality
+"""
 
 
 class TrayIcon(QSystemTrayIcon):
     def __init__(self, app_name: str, app_icon_path: str, window: OverlayWindow, parent=None):  # pyright: ignore[reportMissingParameterType]
         app_instance = QApplication.instance()
         super().__init__(app_instance)
+
         self._log = logging.getLogger("overlay.ui.tray")
         self._window = window
-
         self.setIcon(QIcon(app_icon_path))
         self.setToolTip(app_name)
         self._user_wants_visible = window.isVisible()
@@ -28,14 +34,24 @@ class TrayIcon(QSystemTrayIcon):
 
     def _build_menu(self) -> QMenu:
         menu = QMenu()
+
         self._toggle_action.setCheckable(True)
         self._toggle_action.setChecked(self._user_wants_visible)
         _ = self._toggle_action.triggered.connect(self._on_toggle_visibility_from_menu)
         menu.addAction(self._toggle_action)
+
+        # TODO: Add a configuration window
+        # _ = menu.addSeparator()
+        # configure_action = QAction("Configure", self)
+        # _ = configure_action.triggered.connect(self._create_configure_menu)
+        # menu.addAction(configure_action)
+
         _ = menu.addSeparator()
+
         quit_action = QAction("Quit", self)
-        _= quit_action.triggered.connect(QApplication.instance().quit)
+        _ = quit_action.triggered.connect(QApplication.instance().quit)
         menu.addAction(quit_action)
+
         return menu
 
     def _on_activated(self, reason):  # pyright: ignore[reportMissingParameterType]
@@ -60,3 +76,7 @@ class TrayIcon(QSystemTrayIcon):
 
     def _on_toggle_visibility_from_menu(self, checked: bool):
         self._set_visibility_and_update_ui(checked)
+
+    def _create_configure_menu(self):
+        # TODO:make the menu
+        print()

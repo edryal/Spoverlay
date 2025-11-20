@@ -16,32 +16,37 @@ from PySide6.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QProgre
 from overlay.core.config import AppConfig
 from overlay.core.state import NowPlaying
 
-# --- Platform-specific imports and setup ---
 
-if sys.platform.startswith("linux"):
-    try:
-        from Xlib import X, display  # pyright: ignore[reportUnusedImport]
-        from Xlib.ext import shape
+"""
+Check if we're running on Windows so that we can
+use pywin32 to enable click-through "properly"
+"""
 
-        has_xlib = True
-    except ImportError:
-        has_xlib = False
-else:
-    has_xlib = False
 
+has_win32 = False
 if sys.platform == "win32":
     try:
-        import win32gui, win32con
+        import win32gui, win32con  # pyright: ignore[reportMissingModuleSource]
+
         has_win32 = True
     except ImportError:
         has_win32 = False
-else:
-    has_win32 = False
+
+"""
+Check if we're running on Linux/Wayland
+"""
+
 
 def _is_wayland() -> bool:
     if not sys.platform.startswith("linux"):
         return False
     return "wayland" in os.environ.get("XDG_SESSION_TYPE", "").lower() or bool(os.environ.get("WAYLAND_DISPLAY"))
+
+
+"""
+Helper function to truncate song titles that are
+way too long and mess up the overlay size
+"""
 
 
 def _truncate_text(text: str, max_length: int) -> str:
@@ -50,18 +55,10 @@ def _truncate_text(text: str, max_length: int) -> str:
     return text
 
 
-def _make_window_clickthrough_x11(qt_window: QWidget):
-    if not has_xlib or not qt_window.winId():
-        return
-    log = logging.getLogger("overlay.ui.x11")
-    try:
-        disp = display.Display()
-        x11_window = disp.create_resource_object("window", qt_window.winId())
-        x11_window.shape_select_input(shape.ShapeInput, 0, 0)
-        disp.sync()
-        log.info("Successfully configured click-through for X11.")
-    except Exception as e:
-        log.error(f"Failed to set X11 click-through properties: {e}")
+"""
+Enable click-through on Windows using pywin32
+"""
+
 
 def _make_window_clickthrough_windows(qt_window: QWidget):
     if not has_win32 or not qt_window.winId():
@@ -76,6 +73,7 @@ def _make_window_clickthrough_windows(qt_window: QWidget):
     except Exception as e:
         log.error(f"Failed to set Windows click-through properties: {e}")
 
+
 class ArtLoader(QThread):
     art_loaded = Signal(QPixmap)
 
@@ -87,7 +85,7 @@ class ArtLoader(QThread):
     @override
     def run(self):
         try:
-            req = urllib.request.Request(self._url, headers={"User-Agent": "SpotifyOverlay/1.0"})
+            req = urllib.request.Request(self._url, headers={"User-Agent": "Spoverlay/1.0"})
             with urllib.request.urlopen(req, timeout=10) as resp:
                 image_data = resp.read()
             with Image.open(io.BytesIO(image_data)) as img:
@@ -110,7 +108,7 @@ class ArtLabel(QLabel):
         self.pixmap = pixmap
         self.update()
 
-    def paintEvent(self, event):  # pyright: ignore[reportImplicitOverride, reportMissingParameterType]
+    def paintEvent(self, event):  # pyright: ignore[reportImplicitOverride, reportMissingParameterType, reportIncompatibleMethodOverride]
         if self.pixmap:  # pyright: ignore[reportUnnecessaryComparison]
             painter = QPainter(self)
             painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -134,19 +132,26 @@ class OverlayWindow(QWidget):
         self._config = config
         self._art_size = config.ui.art_size
         self._last_art_url: str | None = None
-        self._debug = bool(os.environ.get("OVERLAY_DEBUG"))
+        self._debug = int(os.environ.get("OVERLAY_DEBUG", "0"))
         self._art_loader_thread: ArtLoader | None = None
         self._is_positioned = False
 
         self._setup_window_flags()
         self._setup_ui()
         self.log = logging.getLogger("overlay.ui.window")
+
+        # Enable click-through if configured
         if self._config.ui.click_through:
             self._setup_click_through()
-        if self._debug:
+
+        # Show the overlay window even if nothing is playing
+        # Useful for debugging so that you know it actually works
+        # Since the overlay is hidden by default
+        if self._debug == 1:
             self.show_placeholder("Waiting for Spotify…")
         else:
             self.hide()
+
         self.user_visibility_state = self.isVisible()
 
     def _setup_window_flags(self):
@@ -201,10 +206,11 @@ class OverlayWindow(QWidget):
     def _setup_click_through(self):
         self.show()
 
+        # We don't need to setup anything for wayland since
+        # the compositor should be responsible for that
+        # Check the WAYLAND section of the README
         if sys.platform == "win32":
             _make_window_clickthrough_windows(self)
-        elif sys.platform.startswith("linux") and not _is_wayland():
-            _make_window_clickthrough_x11(self)
         else:
             self.log.info(f"Relying on WA_TransparentForMouseEvents on {sys.platform}.")
             self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
@@ -214,10 +220,10 @@ class OverlayWindow(QWidget):
             self.hide()
 
     def _should_app_position_window(self) -> bool:
-        if sys.platform.startswith("linux"):
-            if os.environ.get("HYPRLAND_INSTANCE_SIGNATURE"):
-                self.log.info("Hyprland detected. Deferring positioning to window manager.")
-                return False
+        # On Hyprland we let the compositor handle the positioning
+        if sys.platform.startswith("linux") and os.environ.get("HYPRLAND_INSTANCE_SIGNATURE"):
+            self.log.info("Hyprland detected. Deferring positioning to window manager.")
+            return False
         return True
 
     def _position_window(self):
@@ -265,7 +271,7 @@ class OverlayWindow(QWidget):
     def get_last_now_playing(self) -> NowPlaying | None:
         return self._last_np
 
-    @Slot(object)
+    @Slot(object)  # pyright: ignore[reportArgumentType]
     def set_now_playing(self, np: NowPlaying | None):
         self._last_np = np
         is_playing = bool(np and np.is_playing)
