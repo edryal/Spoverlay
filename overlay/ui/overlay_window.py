@@ -32,16 +32,6 @@ if sys.platform == "win32":
     except ImportError:
         has_win32 = False
 
-"""
-Check if we're running on Linux/Wayland
-"""
-
-
-def _is_wayland() -> bool:
-    if not sys.platform.startswith("linux"):
-        return False
-    return "wayland" in os.environ.get("XDG_SESSION_TYPE", "").lower() or bool(os.environ.get("WAYLAND_DISPLAY"))
-
 
 """
 Helper function to truncate song titles that are
