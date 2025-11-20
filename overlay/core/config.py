@@ -63,7 +63,7 @@ def load_config() -> AppConfig:
     position = os.environ.get("OVERLAY_POSITION", "top-right").strip().lower()
     margin = int(os.environ.get("OVERLAY_MARGIN", "24"))
     click_through = os.environ.get("OVERLAY_CLICK_THROUGH", "1") not in ("0", "false", "no")
-    art_size = int(os.environ.get("OVERLAY_ART_SIZE", "62"))
+    art_size = int(os.environ.get("OVERLAY_ART_SIZE", "64"))
 
     # Interval between "updates" basically. Affects the responsiveness
     # of the overlay when the music is paused or unpaused.
