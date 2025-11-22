@@ -145,18 +145,15 @@ For tiling compositors like Hyprland, it is recommended to add window rules to m
 **Example for Hyprland (`hyprland.conf`):**
 ```ini
 # Rules to make Spoverlay float, stay on top, and not steal focus
-windowrulev2 = float, class:^(spoverlay)$, title:^(spoverlay)$
-windowrulev2 = nofocus, class:^(spoverlay)$, title:^(spoverlay)$
-windowrulev2 = noinitialfocus, class:^(spoverlay)$, title:^(spoverlay)$
-windowrulev2 = pin, class:^(spoverlay)$, title:^(spoverlay)$
-windowrulev2 = noborder, class:^(spoverlay)$
-windowrulev2 = noshadow, class:^(spoverlay)$
-
-# Use Hyprland to position the window.
-#
-# For position=top-right (adjust values to your liking):
-# windowrulev2 = move 81% 48, class:^(spoverlay)$
-#
-# For position=top-left (adjust values to your liking):
-# windowrulev2 = move 30 48, class:^(spoverlay)$
+# Troubleshoot 'class' and 'title' by using `hyprctl clients`
+windowrulev2 = float, class:^(spoverlay)$, title:^(spoverlay — Spoverlay)$
+windowrulev2 = nofocus, title:^(spoverlay — Spoverlay)$
+windowrulev2 = noinitialfocus, title:^(spoverlay — Spoverlay)$
+windowrulev2 = pin, title:^(spoverlay — Spoverlay)$
+windowrulev2 = noborder, title:^(spoverlay — Spoverlay)$
+windowrulev2 = noshadow, title:^(spoverlay — Spoverlay)$
+windowrulev2 = move 81% 48, title:^(spoverlay — Spoverlay)$     # top-right
+# windowrulev2 = move 30 48, title:^(spoverlay — Spoverlay)$      # top-left
+# windowrulev2 = move 81% 90%, title:^(spoverlay — Spoverlay)$    # bottom-right
+# windowrulev2 = move 30 90%, title:^(spoverlay — Spoverlay)$     # bottom-left
 ```
