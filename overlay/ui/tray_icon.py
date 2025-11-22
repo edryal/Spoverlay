@@ -13,7 +13,7 @@ from overlay.ui.overlay_window import OverlayWindow
 
 ACTION_TOGGLE_VISIBILITY = "Show Overlay"
 ACTION_CONFIGURE = "Configure"
-ACTION_RELOGIN = "Clear Cache & Relogin"
+ACTION_RELOGIN = "Clear Cache && Relogin"
 ACTION_QUIT = "Quit"
 
 log = logging.getLogger(__name__)

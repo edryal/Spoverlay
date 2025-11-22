@@ -17,6 +17,8 @@ from overlay.core.ipc_listener import IpcListener
 from overlay.ui.overlay_window import OverlayWindow
 from overlay.ui.tray_icon import TrayIcon
 
+from qt_material import apply_stylesheet  # pyright: ignore[reportUnknownVariableType, reportMissingTypeStubs]
+
 
 APP_DISPLAY_NAME = "Spoverlay"
 IPC_SOCKET_PATH = f"/tmp/{APP_NAME}.sock"
@@ -150,6 +152,9 @@ def main() -> None:
     app.setQuitOnLastWindowClosed(False)
     app.setApplicationName(APP_NAME)
     app.setApplicationDisplayName(APP_DISPLAY_NAME)
+
+    extra = { 'density_scale': '-1' }
+    apply_stylesheet(app, 'dark_cyan.xml', invert_secondary=False, extra=extra)
 
     spoverlay_app = SpoverlayApp()
     spoverlay_app.run()

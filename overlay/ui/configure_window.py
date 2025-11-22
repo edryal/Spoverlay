@@ -1,5 +1,6 @@
 # pyright: reportGeneralTypeIssues=false
 import logging
+import os
 from typing import final, override
 
 from PySide6.QtCore import Qt, Signal
@@ -33,7 +34,7 @@ LABEL_HOTKEY = "Global Hotkey:"
 CHECKBOX_CLICK_THROUGH = "Overlay Click-Through"
 
 BUTTON_RESET = "Reset to Default"
-BUTTON_SAVE = "Save & Apply"
+BUTTON_SAVE = "Save && Apply"
 BUTTON_CANCEL = "Cancel"
 
 SPINBOX_MARGIN_RANGE = (0, 500)
