@@ -7,6 +7,7 @@ import toml
 
 from overlay.core.models import AppConfig, SpotifyConfig, UIConfig
 
+
 APP_NAME = "Spoverlay"
 CONFIG_FILE_NAME = "config.toml"
 SPOTIFY_CLIENT_ID = "1a8fda4857f04abfa5a6f13fd7444af3"
