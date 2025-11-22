@@ -1,9 +1,47 @@
 [project]
 name = "spoverlay"
-version = "0.0.1"
-description = "Spotify Overlay (Qt)"
-requires-python = ">=3.10"
+version = "1.0.0"
+requires-python = ">= 3.12"
+description = "A lightweight overlay for Spotify that displays the currently playing track"
+keywords = ["spotify", "overlay"]
+readme = "README.md"
+license = { text = "MIT" }
+
+authors = [
+    { name = "edryal" }
+]
+
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Sound/Audio",
+    "Environment :: Wayland"
+]
+
+dependencies = [
+    "toml",
+    "spotipy",
+    "PySide6",
+    "pynput",
+    "Pillow",
+    "qt-material"
+]
+
+[project.optional-dependencies]
+# pywin32 is only needed on Windows for the click-through feature.
+windows = ["pywin32; sys_platform == 'win32'"]
+
+[project.urls]
+Homepage = "https://github.com/edryal/spoverlay"
+Repository = "https://github.com/edryal/spoverlay"
+"Bug Tracker" = "https://github.com/edryal/spoverlay/issues"
+
+[project.gui-scripts]
+spoverlay = "overlay.app:main"
 
 [tool.black]
 line-length = 160
-target-version = ["py311", "py312"]
+target-version = ["py312"]
