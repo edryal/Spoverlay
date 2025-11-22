@@ -11,6 +11,7 @@ class UIConfig:
     margin: int
     click_through: bool
     art_size: int
+    hotkey: str
 
 @dataclass
 class AppConfig:

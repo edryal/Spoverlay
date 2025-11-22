@@ -12,7 +12,7 @@ from PySide6.QtWidgets import QApplication
 from overlay.core.config import load_config, save_config, APP_NAME
 from overlay.core.models import AppConfig
 from overlay.core.spotify_client import SpotifyClient
-from overlay.core.hotkey_manager import GlobalHotkeyManager
+from overlay.core.hotkey_manager import HotkeyManager
 from overlay.core.ipc_listener import IpcListener
 from overlay.ui.overlay_window import OverlayWindow
 from overlay.ui.tray_icon import TrayIcon
@@ -65,6 +65,7 @@ class SpoverlayApp(QObject):
 
     def _setup_platform_integrations(self):
         """Sets up the global hotkey or IPC listener based on the OS."""
+
         if sys.platform == "linux":
             log.info("Setting up IPC listener for Linux.")
 
@@ -74,11 +75,9 @@ class SpoverlayApp(QObject):
         else:
             log.info(f"Setting up global hotkey for {sys.platform}.")
             try:
-                self.hotkey_manager = GlobalHotkeyManager()
+                self.hotkey_manager = HotkeyManager(self.config)
                 _ = self.hotkey_manager.hotkey_triggered.connect(self.tray_icon.toggle_visibility)
                 self.hotkey_manager.start_listener()
-
-                log.info("Global hotkey listener started.")
             except Exception:
                 log.exception("Fatal error: Failed to initialize GlobalHotkeyManager.")
                 sys.exit(1)

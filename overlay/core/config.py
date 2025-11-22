@@ -12,6 +12,7 @@ APP_NAME = "Spoverlay"
 CONFIG_FILE_NAME = "config.toml"
 SPOTIFY_CLIENT_ID = "1a8fda4857f04abfa5a6f13fd7444af3"
 SPOTIFY_REDIRECT_URI = "http://127.0.0.1:8080/callback"
+DEFAULT_HOTKEY = "F7"
 
 log = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ def get_default_config() -> AppConfig:
             client_id=SPOTIFY_CLIENT_ID,
             redirect_uri=SPOTIFY_REDIRECT_URI,
         ),
-        ui=UIConfig(position="top-right", margin=24, click_through=True, art_size=64),
+        ui=UIConfig(position="top-right", margin=24, click_through=True, art_size=64, hotkey=DEFAULT_HOTKEY),
         poll_interval_ms=1000,
         app_directory=app_directory,
         data_directory=data_directory,
@@ -49,6 +50,7 @@ def save_config(config: AppConfig):
             "margin": config.ui.margin,
             "click_through": config.ui.click_through,
             "art_size": config.ui.art_size,
+            "hotkey": config.ui.hotkey,
         },
         "poll_interval_ms": config.poll_interval_ms,
     }
@@ -93,6 +95,7 @@ def load_config() -> AppConfig:
             config.ui.margin = int(user_ui_section.get("margin", config.ui.margin))  # pyright: ignore[reportUnknownArgumentType]
             config.ui.art_size = int(user_ui_section.get("art_size", config.ui.art_size))  # pyright: ignore[reportUnknownArgumentType]
             config.ui.click_through = bool(user_ui_section.get("click_through", config.ui.click_through))  # pyright: ignore[reportUnknownArgumentType]
+            config.ui.hotkey = str(user_ui_section.get("hotkey", config.ui.hotkey))  # pyright: ignore[reportUnknownArgumentType]
         except (ValueError, TypeError):
             log.warning("Invalid value in 'ui' section of config, using defaults for affected keys.")
 

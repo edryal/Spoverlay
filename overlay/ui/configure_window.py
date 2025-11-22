@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QPushButton,
     QSizePolicy,
     QSpacerItem,
@@ -28,6 +29,7 @@ LABEL_POSITION = "Overlay Position:"
 LABEL_MARGIN = "Screen Margin (px):"
 LABEL_ART_SIZE = "Album Art Size (px):"
 LABEL_POLL_INTERVAL = "Update Interval (ms):"
+LABEL_HOTKEY = "Global Hotkey:"
 CHECKBOX_CLICK_THROUGH = "Overlay Click-Through"
 
 BUTTON_RESET = "Reset to Default"
@@ -62,6 +64,7 @@ class ConfigureWindow(QWidget):
         self.margin_spinbox: QSpinBox
         self.art_size_spinbox: QSpinBox
         self.poll_interval_spinbox: QSpinBox
+        self.hotkey_input: QLineEdit
         self.click_through_checkbox: QCheckBox
 
         self._create_widgets()
@@ -86,6 +89,9 @@ class ConfigureWindow(QWidget):
         self.poll_interval_spinbox.setRange(*SPINBOX_POLL_INTERVAL_RANGE)
         self.poll_interval_spinbox.setSingleStep(100)
 
+        self.hotkey_input = QLineEdit()
+        self.hotkey_input.setPlaceholderText("e.g., ctrl+shift+f7")
+
         self.click_through_checkbox = QCheckBox(CHECKBOX_CLICK_THROUGH)
 
     def _layout_widgets(self):
@@ -97,6 +103,7 @@ class ConfigureWindow(QWidget):
         self._add_widget_with_label(main_layout, self.margin_spinbox, LABEL_MARGIN)
         self._add_widget_with_label(main_layout, self.art_size_spinbox, LABEL_ART_SIZE)
         self._add_widget_with_label(main_layout, self.poll_interval_spinbox, LABEL_POLL_INTERVAL)
+        self._add_widget_with_label(main_layout, self.hotkey_input, LABEL_HOTKEY)
         main_layout.addWidget(self.click_through_checkbox)
 
         main_layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
@@ -136,6 +143,7 @@ class ConfigureWindow(QWidget):
         self.art_size_spinbox.setValue(source.ui.art_size)
         self.click_through_checkbox.setChecked(source.ui.click_through)
         self.poll_interval_spinbox.setValue(source.poll_interval_ms)
+        self.hotkey_input.setText(source.ui.hotkey)
 
     def _on_save(self):
         """
@@ -151,6 +159,7 @@ class ConfigureWindow(QWidget):
         self._shared_config.ui.click_through = self.click_through_checkbox.isChecked()
         self._shared_config.ui.art_size = self.art_size_spinbox.value()
         self._shared_config.poll_interval_ms = self.poll_interval_spinbox.value()
+        self._shared_config.ui.hotkey = self.hotkey_input.text()
 
         # Emit the signal containing the reference to the now-modified shared object.
         self.config_saved.emit(self._shared_config)
