@@ -13,8 +13,7 @@ from PySide6.QtCore import Qt, QThread, Signal, Slot, QTimer
 from PySide6.QtGui import QPainter, QColor, QImage, QPixmap, QPainterPath
 from PySide6.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QProgressBar
 
-from overlay.core.config import AppConfig
-from overlay.core.state import NowPlaying
+from overlay.core.models import AppConfig, NowPlaying
 
 
 """
@@ -134,14 +133,7 @@ class OverlayWindow(QWidget):
         if self._config.ui.click_through:
             self._setup_click_through()
 
-        # Show the overlay window even if nothing is playing
-        # Useful for debugging so that you know it actually works
-        # Since the overlay is hidden by default
-        if self._debug == 1:
-            self.show_placeholder("Waiting for Spotify…")
-        else:
-            self.hide()
-
+        self.show_placeholder("Connecting to Spotify…")
         self.user_visibility_state = self.isVisible()
 
     def _setup_window_flags(self):
@@ -192,6 +184,16 @@ class OverlayWindow(QWidget):
         content_layout.addWidget(text_and_progress_widget)
 
         _ = self._progress_timer.timeout.connect(self._progress_tick)
+
+    @Slot()
+    def clear_ui(self):
+        # Clear the overlay content, showing a placeholder
+        self.log.info("Clearing UI and showing placeholder.")
+        self.show_placeholder("Re-authenticating...")
+        self._last_np = None
+        self._last_art_url = None
+        self._is_playing = False
+        self._stop_progress_timer()
 
     def _setup_click_through(self):
         self.show()
@@ -332,3 +334,16 @@ class OverlayWindow(QWidget):
         self._art_loader_thread = ArtLoader(url, size, self)
         _ = self._art_loader_thread.art_loaded.connect(self._on_art_loaded)
         self._art_loader_thread.start()
+
+    def on_config_changed(self, new_config: AppConfig):
+        self._config = new_config
+        self._art_size = new_config.ui.art_size
+        self._img.setFixedSize(self._art_size, self._art_size)
+        
+        # Re-evaluate click-through
+        self._setup_click_through()
+        
+        # Force repositioning of the window with the new config
+        self._is_positioned = False 
+        if self.isVisible():
+            self._position_window()

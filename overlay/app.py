@@ -11,7 +11,8 @@ from typing import final
 from PySide6.QtCore import Signal, QObject
 from PySide6.QtWidgets import QApplication
 
-from overlay.core.config import load_config
+from overlay.core.config import load_config, save_config
+from overlay.core.models import AppConfig
 from overlay.core.spotify_client import SpotifyClient
 from overlay.core.hotkey_manager import GlobalHotkeyManager
 from overlay.ui.overlay_window import OverlayWindow
@@ -87,7 +88,7 @@ def main() -> None:
 
     try:
         config = load_config()
-        log.info("Configuration from .env and Environment Variables has been loaded.")
+        log.info("Overlay configuration has been loaded.")
     except Exception as e:
         log.exception("Failed to load configuration: %s", e)
         sys.exit(1)
@@ -99,22 +100,23 @@ def main() -> None:
         log.exception("Failed to create overlay window: %s", e)
         sys.exit(1)
 
+    spotify_client = None
+    try:
+        spotify_client = SpotifyClient(config)
+        log.info("Spotify client connected Successfully.")
+    except Exception as e:
+        log.exception("Failed to initialize the spotify client: %s", e)
+        sys.exit(1)
+
     tray_icon = None
     try:
         icon_path = os.path.join(config.app_directory, "assets", "tray-icon.jpg")
         if not os.path.exists(icon_path):
             log.warning(f"Icon not found at {icon_path}, tray may not have an icon.")
-        tray_icon = TrayIcon("Spotify Overlay", icon_path, win)
+        tray_icon = TrayIcon("Spotify Overlay", icon_path, win, spotify_client, config)
         log.info("System tray icon Successfully created.")
     except Exception as e:
         log.exception("Failed to create the tray icon: %s", e)
-
-    try:
-        sp_client = SpotifyClient(config)
-        log.info("Spotify client connected Successfully.")
-    except Exception as e:
-        log.exception("Failed to initialize the spotify client: %s", e)
-        sys.exit(1)
 
     hotkey_manager = None
     ipc_listener = None
@@ -139,15 +141,32 @@ def main() -> None:
     else:
         log.warning("Tray Icon failed to initialize. Hotkey setup will be skipped.")
 
-    _ = sp_client.now_playing_updated.connect(win.set_now_playing)
+    def on_config_changed(new_config_values: AppConfig):
+        log.info("Configuration changed, applying settings...")
+        
+        # Update the shared config object in-place
+        config.ui = new_config_values.ui
+        config.poll_interval_ms = new_config_values.poll_interval_ms
+        
+        save_config(config)
+        win.on_config_changed(config)
+        spotify_client.on_config_changed(config)
+        log.info("Settings applied and saved.")
+
+    if tray_icon:
+        _ = tray_icon.configure_window.config_saved.connect(on_config_changed)
+
+    _ = spotify_client.clear_ui_requested.connect(win.clear_ui)
+    _ = spotify_client.now_playing_updated.connect(win.set_now_playing)
     log.info("Listening for now_playing events.")
 
-    sp_client.start_polling()
+    spotify_client.initial_fetch_and_emit()
+    spotify_client.start_polling()
     log.info("Started polling using the the spotify client")
 
     def on_about_to_quit():
         log.info("Stopping the spotify client...")
-        sp_client.stop()
+        spotify_client.stop()
         log.info("Stopped the spotify client...")
 
         if hotkey_manager:

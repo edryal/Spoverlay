@@ -1,85 +1,98 @@
+# pyright: reportAny=false, reportUnknownMemberType=false
 import os
 import sys
-from dataclasses import dataclass
+import logging
 
-from dotenv import load_dotenv
+import toml
+
+from overlay.core.models import AppConfig, SpotifyConfig, UIConfig
+
+APP_NAME = "Spoverlay"
+CONFIG_FILE_NAME = "config.toml"
+SPOTIFY_CLIENT_ID = "1a8fda4857f04abfa5a6f13fd7444af3"
+SPOTIFY_REDIRECT_URI = "http://127.0.0.1:8080/callback"
+
+log = logging.getLogger(__name__)
 
 
-def _user_data_dir(app_name: str) -> str:
+def _user_data_dir() -> str:
     home = os.path.expanduser("~")
     if sys.platform.startswith("win"):
         base = os.environ.get("APPDATA", os.path.join(home, "AppData", "Roaming"))
-        return os.path.join(base, app_name)
     else:
-        base = os.environ.get("XDG_CACHE_HOME", os.path.join(home, ".cache"))
-        return os.path.join(base, app_name)
+        base = os.environ.get("XDG_CONFIG_HOME", os.path.join(home, ".config"))
+    return os.path.join(base, APP_NAME)
 
 
-@dataclass
-class SpotifyConfig:
-    client_id: str
-    redirect_uri: str
-
-
-@dataclass
-class UIConfig:
-    position: str  # top-left, top-right, bottom-left, bottom-right
-    margin: int
-    click_through: bool
-    art_size: int
-
-
-@dataclass
-class AppConfig:
-    spotify: SpotifyConfig
-    ui: UIConfig
-    poll_interval_ms: int
-    app_directory: str
-    data_directory: str
-
-"""
-Loads all the environment variables
-required for the overlay to run properly
-"""
-
-def load_config() -> AppConfig:
-    # Mostly for the .env file from this project's directory
-    # But I guess it's only useful while developing
-    _ = load_dotenv()
-
-    # Spotify credentials that need to be created
-    # in the spotify developer dashboard
-    client_id = os.getenv("SPOTIFY_CLIENT_ID")
-    redirect_uri = os.getenv("SPOTIFY_REDIRECT_URI")
-
-    if not client_id:
-        raise RuntimeError("Missing SPOTIFY_CLIENT_ID environment variable")
-
-    if not redirect_uri:
-        raise RuntimeError("Missing SPOTIFY_REDIRECT_URI environment variable")
-
-    # UI settings
-    # These are some pretty sane defaults
-    position = os.environ.get("OVERLAY_POSITION", "top-right").strip().lower()
-    margin = int(os.environ.get("OVERLAY_MARGIN", "24"))
-    click_through = os.environ.get("OVERLAY_CLICK_THROUGH", "1") not in ("0", "false", "no")
-    art_size = int(os.environ.get("OVERLAY_ART_SIZE", "64"))
-
-    # Interval between "updates" basically. Affects the responsiveness
-    # of the overlay when the music is paused or unpaused.
-    # Defaults to 1000ms
-    poll_interval_ms = int(os.environ.get("POLL_INTERVAL_MS", "1000"))
-
-    # Current app directory so that assets/tray-icon can be found
+def get_default_config() -> AppConfig:
     app_directory = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-
-    # Location where the cached token will be stored
-    data_directory = _user_data_dir("Spoverlay")
+    data_directory = _user_data_dir()
 
     return AppConfig(
-        spotify=SpotifyConfig(client_id=client_id, redirect_uri=redirect_uri),
-        ui=UIConfig(position=position, margin=margin, click_through=click_through, art_size=art_size),
-        poll_interval_ms=poll_interval_ms,
+        spotify=SpotifyConfig(
+            client_id=SPOTIFY_CLIENT_ID,
+            redirect_uri=SPOTIFY_REDIRECT_URI,
+        ),
+        ui=UIConfig(position="top-right", margin=24, click_through=True, art_size=64),
+        poll_interval_ms=1000,
         app_directory=app_directory,
         data_directory=data_directory,
+        config_path=os.path.join(data_directory, CONFIG_FILE_NAME),
     )
+
+
+def save_config(config: AppConfig):
+    config_to_save = {
+        "ui": {
+            "position": config.ui.position,
+            "margin": config.ui.margin,
+            "click_through": config.ui.click_through,
+            "art_size": config.ui.art_size,
+        },
+        "poll_interval_ms": config.poll_interval_ms,
+    }
+    try:
+        os.makedirs(os.path.dirname(config.config_path), exist_ok=True)
+        with open(config.config_path, "w") as f:
+            _ = toml.dump(config_to_save, f)
+    except (IOError, OSError) as e:
+        log.error(f"Failed to save configuration to {config.config_path}: {e}")
+
+
+def load_config() -> AppConfig:
+    """
+    Loads configuration from the user's file, safely falling back to defaults
+    for any missing or invalid values. Creates the file if it doesn't exist.
+    """
+    # Start with a fresh copy of the defaults.
+    config = get_default_config()
+
+    # Create the config file from defaults if it's missing.
+    if not os.path.exists(config.config_path):
+        save_config(config)
+        return config
+
+    # Load from the file, but don't crash on corruption.
+    try:
+        with open(config.config_path, "r") as f:
+            user_config = toml.load(f)
+    except toml.TomlDecodeError as e:
+        log.warning(f"Failed to decode config file, using defaults. Error: {e}")
+        return config
+
+    try:
+        config.poll_interval_ms = int(user_config.get("poll_interval_ms", config.poll_interval_ms))
+    except (ValueError, TypeError):
+        log.warning("Invalid 'poll_interval_ms' in config, using default.")
+
+    user_ui_section = user_config.get("ui", {})
+    if isinstance(user_ui_section, dict):
+        try:
+            config.ui.position = str(user_ui_section.get("position", config.ui.position))  # pyright: ignore[reportUnknownArgumentType]
+            config.ui.margin = int(user_ui_section.get("margin", config.ui.margin))  # pyright: ignore[reportUnknownArgumentType]
+            config.ui.art_size = int(user_ui_section.get("art_size", config.ui.art_size))  # pyright: ignore[reportUnknownArgumentType]
+            config.ui.click_through = bool(user_ui_section.get("click_through", config.ui.click_through))  # pyright: ignore[reportUnknownArgumentType]
+        except (ValueError, TypeError):
+            log.warning("Invalid value in 'ui' section of config, using defaults for affected keys.")
+
+    return config

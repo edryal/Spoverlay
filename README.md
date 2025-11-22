@@ -57,7 +57,7 @@ Install the required packages for your operating system.
 
 ```bash
 # Install core Python dependencies
-pip install python-dotenv spotipy PySide6 PySide6-stubs pynput Pillow pyinstaller
+pip install toml spotipy PySide6 PySide6-stubs pynput Pillow pyinstaller
 
 # Install platform-specific Python packages
 # On Linux (X11):
