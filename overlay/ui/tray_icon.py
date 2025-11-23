@@ -2,7 +2,8 @@
 
 import logging
 
-from PySide6.QtGui import QAction, QIcon
+from PySide6.QtCore import QUrl
+from PySide6.QtGui import QAction, QDesktopServices, QIcon
 from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
 from overlay.core.models import AppConfig
@@ -13,6 +14,7 @@ from overlay.ui.overlay_window import OverlayWindow
 
 ACTION_TOGGLE_VISIBILITY = "Show Overlay"
 ACTION_CONFIGURE = "Configure"
+ACTION_OPEN_DATA_DIR = "Open Data Directory"
 ACTION_RELOGIN = "Clear Cache && Relogin"
 ACTION_QUIT = "Quit"
 
@@ -32,6 +34,7 @@ class TrayIcon(QSystemTrayIcon):
 
         self._window = window
         self._spotify_client = spotify_client
+        self._config = config
 
         self.setIcon(QIcon(icon_path))
         self.setToolTip(app_name)
@@ -39,7 +42,7 @@ class TrayIcon(QSystemTrayIcon):
         self._user_wants_visible = window.isVisible()
         self._window.user_visibility_state = self._user_wants_visible
 
-        self.configure_window = ConfigureWindow(config)
+        self.configure_window = ConfigureWindow(self._config)
         self._toggle_action = QAction(ACTION_TOGGLE_VISIBILITY, self)
         self.setContextMenu(self._build_menu())
 
@@ -63,6 +66,12 @@ class TrayIcon(QSystemTrayIcon):
 
         _ = menu.addSeparator()
 
+        open_dir_action = QAction(ACTION_OPEN_DATA_DIR, self)
+        _ = open_dir_action.triggered.connect(self._open_data_directory)
+        menu.addAction(open_dir_action)
+
+        _ = menu.addSeparator()
+
         relogin_action = QAction(ACTION_RELOGIN, self)
         _ = relogin_action.triggered.connect(self._on_relogin)
         menu.addAction(relogin_action)
@@ -74,6 +83,13 @@ class TrayIcon(QSystemTrayIcon):
         menu.addAction(quit_action)
 
         return menu
+
+    def _open_data_directory(self):
+        """Opens the application's data directory in the system file explorer."""
+
+        path = self._config.data_directory
+        log.info(f"Opening data directory: {path}")
+        _ = QDesktopServices.openUrl(QUrl.fromLocalFile(path))
 
     def _on_activated(self, reason: QSystemTrayIcon.ActivationReason):
         """Handles left-click activation on the tray icon."""

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 class SpotifyConfig:
     client_id: str
     redirect_uri: str
+    poll_interval_ms: int
 
 @dataclass
 class UIConfig:
@@ -17,7 +18,6 @@ class UIConfig:
 class AppConfig:
     client: SpotifyConfig
     ui: UIConfig
-    poll_interval_ms: int
     app_directory: str
     data_directory: str
     config_path: str

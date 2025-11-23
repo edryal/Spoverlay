@@ -36,17 +36,25 @@ if sys.platform == "win32":
         log.warning("pywin32 not found. Windows click-through will not work.")
 
 
-def _make_window_clickthrough_windows(qt_window: QWidget):
-    """Configures click-through on Windows using pywin32."""
+def _set_window_clickthrough_windows(qt_window: QWidget, enabled: bool):
+    """Configures (or removes) click-through on Windows using pywin32."""
 
     if not has_win32 or not qt_window.winId():
         return
     try:
         hwnd = int(qt_window.winId())
         style = win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE)
-        new_style = style | win32con.WS_EX_LAYERED | win32con.WS_EX_TRANSPARENT
+        
+        if enabled:
+            # Add the transparent style
+            new_style = style | win32con.WS_EX_LAYERED | win32con.WS_EX_TRANSPARENT
+            log.info("Enabling Windows click-through.")
+        else:
+            # Remove the transparent style
+            new_style = style & ~win32con.WS_EX_TRANSPARENT
+            log.info("Disabling Windows click-through.")
+
         win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, new_style)
-        log.info("Successfully configured click-through for Windows.")
     except Exception as e:
         log.error(f"Failed to set Windows click-through properties: {e}")
 
@@ -214,11 +222,13 @@ class OverlayWindow(QWidget):
     def _setup_click_through(self):
         """Enables click-through based on the operating system."""
 
+        enabled = self._config.ui.click_through
         if sys.platform == "win32":
-            _make_window_clickthrough_windows(self)
+            _set_window_clickthrough_windows(self, enabled)
         else:
-            log.info(f"Relying on WA_TransparentForMouseEvents for click-through on {sys.platform}.")
-            self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+            log.info(f"Setting WA_TransparentForMouseEvents to {enabled} on {sys.platform}.")
+            self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, enabled)
+            self.update()
 
     def _should_app_position_window(self) -> bool:
         """Determines if the application should control window position."""

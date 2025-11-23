@@ -1,4 +1,5 @@
 # pyright: reportGeneralTypeIssues=false, reportUnknownMemberType=false
+
 import logging
 import os
 import socket
@@ -40,6 +41,7 @@ class IpcListener(QObject):
         if not self._running:
             self._running = True
             self._thread.start()
+            log.info("IpcListener has been started.")
 
     def stop(self):
         """Stops the listener thread gracefully."""
