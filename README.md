@@ -85,7 +85,7 @@ pip install pywin32
 
 6. Accept Spotify ToS and ```Save```.
 7. Open the App you just created and copy the ```Client ID```.
-8. Paste the ```Client ID``` in the configuration.
+8. Paste the ```Client ID``` in the setup wizard.
 
 ---
 
@@ -107,7 +107,7 @@ All settings are managed through a graphical interface.
 2.  Select **"Configure"**.
 
 <p align="left">
-  <img width="431" height="278" alt="image" src="https://github.com/user-attachments/assets/71b99450-6dd6-4d29-9862-a5277397519b" />
+  <img width="425" height="441" alt="image" src="https://github.com/user-attachments/assets/d0da955b-4c58-4413-b6dd-7ebd9746b97b" />
 </p>
 
 Changes are applied instantly upon clicking **"Save & Apply"**.
@@ -120,7 +120,7 @@ Settings are stored in `config.toml` in your user's configuration directory (e.g
 | **Screen Margin (px)** | The distance in pixels from the screen edges. |
 | **Album Art Size (px)**| The size of the album art in pixels (e.g., 64, 96, 128). |
 | **Update Interval (ms)**| How often to check Spotify for changes. 500-1000ms is a safe range. |
-| **Global Hotkey** | (Windows) The global key combination to toggle the overlay (e.g., `F7`, `ctrl+shift+h`). |
+| **Global Hotkey** | (Windows) The global key combination to toggle the overlay (e.g., `F7`, `CTRL+SHIFT+F1`). |
 | **Overlay Click-Through**| If checked, makes the overlay non-interactive. |
 
 ---
