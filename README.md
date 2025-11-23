@@ -73,6 +73,20 @@ pip install pywin32
 > sudo apt install socat
 > ```
 
+### 4. Create Spotify App
+1. Navigate to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
+2. Click on ```Create App```.
+3. Give it a ```name``` and ```description```.
+4. Add this local Redirect URI ```http://127.0.0.1:8080/callback``` and click ```Add```.
+<img width="258" height="202" alt="image" src="https://github.com/user-attachments/assets/7f04b37f-39a5-4553-923d-16da39c3a36d" />
+
+5. Check this box to allow the app to use the Spotify API to fetch data for the currently playing track.
+<img width="255" height="84" alt="image" src="https://github.com/user-attachments/assets/46b43616-2d8f-4ca4-a4c8-0798cdbc4bed" />
+
+6. Accept Spotify ToS and ```Save```.
+7. Open the App you just created and copy the ```Client ID```.
+8. Paste the ```Client ID``` in the configuration.
+
 ---
 
 ## Running the Application
