@@ -15,7 +15,7 @@ class UIConfig:
 
 @dataclass
 class AppConfig:
-    spotify: SpotifyConfig
+    client: SpotifyConfig
     ui: UIConfig
     poll_interval_ms: int
     app_directory: str

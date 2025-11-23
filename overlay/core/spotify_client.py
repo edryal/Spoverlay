@@ -13,8 +13,6 @@ from PySide6.QtCore import QObject, Signal
 from overlay.core.models import AppConfig, NowPlaying
 
 
-SPOTIFY_CLIENT_ID = "1a8fda4857f04abfa5a6f13fd7444af3"
-SPOTIFY_REDIRECT_URI = "http://127.0.0.1:8080/callback"
 SPOTIFY_SCOPE = "user-read-playback-state user-read-currently-playing"
 SPOTIFY_CACHE_FILENAME = "spotify_token_cache"
 
@@ -39,8 +37,8 @@ class SpotifyClient(QObject):
         os.makedirs(config.data_directory, exist_ok=True)
 
         auth_manager = SpotifyPKCE(
-            client_id=SPOTIFY_CLIENT_ID,
-            redirect_uri=SPOTIFY_REDIRECT_URI,
+            client_id=self._config.client.client_id,
+            redirect_uri=self._config.client.redirect_uri,
             scope=SPOTIFY_SCOPE,
             cache_path=self.cache_path,
             open_browser=True,

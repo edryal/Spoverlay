@@ -1,6 +1,5 @@
 # pyright: reportGeneralTypeIssues=false
 import logging
-import os
 from typing import final, override
 
 from PySide6.QtCore import Qt, Signal
@@ -26,6 +25,8 @@ from overlay.core.models import AppConfig
 WINDOW_TITLE = "Configure Spoverlay"
 WINDOW_WIDTH, WINDOW_HEIGHT = 400, 250
 
+LABEL_CLIENT_ID = "Client ID:"
+LABEL_REDIRECT_URI = "Redirect URI:"
 LABEL_POSITION = "Overlay Position:"
 LABEL_MARGIN = "Screen Margin (px):"
 LABEL_ART_SIZE = "Album Art Size (px):"
@@ -61,6 +62,8 @@ class ConfigureWindow(QWidget):
         self._shared_config = config
         self._defaults = get_default_config()
 
+        self.client_id_input: QLineEdit
+        self.redirect_uri_input: QLineEdit
         self.position_choice: QComboBox
         self.margin_spinbox: QSpinBox
         self.art_size_spinbox: QSpinBox
@@ -75,6 +78,12 @@ class ConfigureWindow(QWidget):
 
     def _create_widgets(self):
         """Initializes all the child widgets for the configuration window."""
+
+        self.client_id_input = QLineEdit()
+        self.client_id_input.setPlaceholderText("ID from Spotify Dashboard App")
+
+        self.redirect_uri_input = QLineEdit()
+        self.redirect_uri_input.setPlaceholderText("e.g., http://127.0.0.1:8080/callback")
 
         self.position_choice = QComboBox()
         self.position_choice.addItems(["top-right", "top-left", "bottom-right", "bottom-left"])
@@ -100,6 +109,8 @@ class ConfigureWindow(QWidget):
 
         main_layout = QVBoxLayout(self)
 
+        self._add_widget_with_label(main_layout, self.client_id_input, LABEL_CLIENT_ID)
+        self._add_widget_with_label(main_layout, self.redirect_uri_input, LABEL_REDIRECT_URI)
         self._add_widget_with_label(main_layout, self.position_choice, LABEL_POSITION)
         self._add_widget_with_label(main_layout, self.margin_spinbox, LABEL_MARGIN)
         self._add_widget_with_label(main_layout, self.art_size_spinbox, LABEL_ART_SIZE)
@@ -139,6 +150,8 @@ class ConfigureWindow(QWidget):
     def _load_config_into_ui(self, source: AppConfig):
         """Populates the UI fields from a given config object."""
 
+        self.client_id_input.setText(source.client.client_id)
+        self.redirect_uri_input.setText(source.client.redirect_uri)
         self.position_choice.setCurrentText(source.ui.position)
         self.margin_spinbox.setValue(source.ui.margin)
         self.art_size_spinbox.setValue(source.ui.art_size)
@@ -155,6 +168,8 @@ class ConfigureWindow(QWidget):
         log.info("Saving new configuration.")
 
         # Modify the shared config object directly.
+        self._shared_config.client.client_id = self.client_id_input.text()
+        self._shared_config.client.redirect_uri = self.redirect_uri_input.text()
         self._shared_config.ui.position = self.position_choice.currentText()
         self._shared_config.ui.margin = self.margin_spinbox.value()
         self._shared_config.ui.click_through = self.click_through_checkbox.isChecked()

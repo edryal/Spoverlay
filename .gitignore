@@ -26,3 +26,6 @@ venv.bak/
 
 # Rope
 .ropeproject
+
+# Custom shell scripts
+*sh

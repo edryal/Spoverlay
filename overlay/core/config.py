@@ -10,7 +10,6 @@ from overlay.core.models import AppConfig, SpotifyConfig, UIConfig
 
 APP_NAME = "Spoverlay"
 CONFIG_FILE_NAME = "config.toml"
-SPOTIFY_CLIENT_ID = "1a8fda4857f04abfa5a6f13fd7444af3"
 SPOTIFY_REDIRECT_URI = "http://127.0.0.1:8080/callback"
 DEFAULT_HOTKEY = "F7"
 
@@ -31,8 +30,8 @@ def get_default_config() -> AppConfig:
     data_directory = _user_data_dir()
 
     return AppConfig(
-        spotify=SpotifyConfig(
-            client_id=SPOTIFY_CLIENT_ID,
+        client=SpotifyConfig(
+            client_id="",
             redirect_uri=SPOTIFY_REDIRECT_URI,
         ),
         ui=UIConfig(position="top-right", margin=24, click_through=True, art_size=64, hotkey=DEFAULT_HOTKEY),
@@ -45,6 +44,10 @@ def get_default_config() -> AppConfig:
 
 def save_config(config: AppConfig):
     config_to_save = {
+        "client": {
+            "client_id": config.client.client_id,
+            "redirect_uri": config.client.redirect_uri,
+        },
         "ui": {
             "position": config.ui.position,
             "margin": config.ui.margin,
@@ -98,5 +101,13 @@ def load_config() -> AppConfig:
             config.ui.hotkey = str(user_ui_section.get("hotkey", config.ui.hotkey))  # pyright: ignore[reportUnknownArgumentType]
         except (ValueError, TypeError):
             log.warning("Invalid value in 'ui' section of config, using defaults for affected keys.")
+
+    spotify_client_section = user_config.get("client", {})
+    if isinstance(spotify_client_section, dict):
+        try:
+            config.client.client_id = str(spotify_client_section.get("client_id", config.client.client_id))  # pyright: ignore[reportUnknownArgumentType]
+            config.client.redirect_uri = str(spotify_client_section.get("redirect_uri", config.client.redirect_uri))  # pyright: ignore[reportUnknownArgumentType]
+        except (ValueError, TypeError):
+            log.warning("Invalid value in 'client' section of config, using defaults for affected keys.")
 
     return config
