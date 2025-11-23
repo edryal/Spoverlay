@@ -36,6 +36,10 @@ class SpotifyClient(QObject):
         self.cache_path = os.path.join(config.data_directory, SPOTIFY_CACHE_FILENAME)
         os.makedirs(config.data_directory, exist_ok=True)
 
+        # TODO: Add Client ID validation in the future.
+        # Pop-up window for adding the Client ID on
+        # the first run of the application.
+
         auth_manager = SpotifyPKCE(
             client_id=self._config.client.client_id,
             redirect_uri=self._config.client.redirect_uri,

@@ -23,7 +23,7 @@ from overlay.core.models import AppConfig
 
 
 WINDOW_TITLE = "Configure Spoverlay"
-WINDOW_WIDTH, WINDOW_HEIGHT = 400, 250
+WINDOW_WIDTH, WINDOW_HEIGHT = 400, 400
 
 LABEL_CLIENT_ID = "Client ID:"
 LABEL_REDIRECT_URI = "Redirect URI:"
