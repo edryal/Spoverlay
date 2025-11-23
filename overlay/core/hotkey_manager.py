@@ -85,32 +85,45 @@ class HotkeyManager(QObject):
         Starts the keyboard listener in a separate thread. This should only be
         called once at application startup.
         """
+        # Stop any existing listener first
+        self.stop_listener()
 
-        self._target_keys = self._parse_hotkey_string(self._config.ui.hotkey)
+        hotkey_str = self._config.ui.hotkey
+        if not hotkey_str:
+            log.info("No hotkey configured. Listener will not start.")
+            return
+
+        self._target_keys = self._parse_hotkey_string(hotkey_str)
         if not self._target_keys:
-            log.warning("Cannot start listener: hotkey is invalid.")
+            log.warning("Cannot start listener: hotkey parsed to empty set.")
             return
 
         self._listener = keyboard.Listener(on_press=self._on_press, on_release=self._on_release)  # pyright: ignore[reportArgumentType]
         self._listener_thread = Thread(target=self._listener.run, name="hotkey-listener", daemon=True)
         self._listener_thread.start()
-        log.info("Global hotkey listener started.")
+        log.info(f"Global hotkey listener started for: {hotkey_str}")
 
     def stop_listener(self):
         """Stops the keyboard listener thread."""
 
         if self._listener:
-            self._listener.stop()
-            log.info("Global hotkey listener stopped.")
+            try:
+                self._listener.stop()
+                self._listener = None
+                self._listener_thread = None
+                log.info("Global hotkey listener stopped.")
+            except Exception as e:
+                log.error(f"Error stopping listener: {e}")
 
     def on_config_changed(self, new_config: AppConfig):
         """
         Hot-reloads the hotkey by stopping the old listener and starting a new one.
         """
 
-        log.info("Configuration changed. Re-initializing hotkey listener.")
-        self.stop_listener()
-
-        # Update internal config and restart with the new hotkey
-        self._config = new_config
-        self.start_listener()
+        # Only restart if the hotkey string actually changed
+        if self._config.ui.hotkey != new_config.ui.hotkey:
+            log.info("Hotkey configuration changed. Reloading listener...")
+            self._config = new_config
+            self.start_listener()
+        else:
+            self._config = new_config

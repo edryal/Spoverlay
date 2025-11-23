@@ -55,7 +55,7 @@ Install the required packages for your operating system.
 
 ```bash
 # Install core dependencies
-pip install toml spotipy PySide6 pynput Pillow qt-material
+pip install toml spotipy PySide6 pynput Pillow qt-material qt-material-stubs
 ```
 ```bash
 # For Windows, also install pywin32 for click-through support

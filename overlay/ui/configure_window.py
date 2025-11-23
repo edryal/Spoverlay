@@ -1,4 +1,3 @@
-# pyright: reportGeneralTypeIssues=false
 import logging
 from typing import final, override
 
@@ -7,6 +6,7 @@ from PySide6.QtGui import QShowEvent
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
+    QFormLayout,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -19,11 +19,12 @@ from PySide6.QtWidgets import (
 )
 
 from overlay.core.config import get_default_config
+from overlay.core.hotkey_recorder import HotkeyRecorder
 from overlay.core.models import AppConfig
 
 
 WINDOW_TITLE = "Configure Spoverlay"
-WINDOW_WIDTH, WINDOW_HEIGHT = 400, 400
+WINDOW_WIDTH, WINDOW_HEIGHT = 400, 420
 
 LABEL_CLIENT_ID = "Client ID:"
 LABEL_REDIRECT_URI = "Redirect URI:"
@@ -68,7 +69,7 @@ class ConfigureWindow(QWidget):
         self.margin_spinbox: QSpinBox
         self.art_size_spinbox: QSpinBox
         self.poll_interval_spinbox: QSpinBox
-        self.hotkey_input: QLineEdit
+        self.hotkey_input: HotkeyRecorder
         self.click_through_checkbox: QCheckBox
 
         self._create_widgets()
@@ -80,10 +81,13 @@ class ConfigureWindow(QWidget):
         """Initializes all the child widgets for the configuration window."""
 
         self.client_id_input = QLineEdit()
-        self.client_id_input.setPlaceholderText("ID from Spotify Dashboard App")
+        self.client_id_input.setReadOnly(True)
+        self.client_id_input.setPlaceholderText("Not configured")
+        self.client_id_input.setStyleSheet("color: #888;")
 
         self.redirect_uri_input = QLineEdit()
-        self.redirect_uri_input.setPlaceholderText("e.g., http://127.0.0.1:8080/callback")
+        self.redirect_uri_input.setReadOnly(True)
+        self.redirect_uri_input.setStyleSheet("color: #888;")
 
         self.position_choice = QComboBox()
         self.position_choice.addItems(["top-right", "top-left", "bottom-right", "bottom-left"])
@@ -99,26 +103,48 @@ class ConfigureWindow(QWidget):
         self.poll_interval_spinbox.setRange(*SPINBOX_POLL_INTERVAL_RANGE)
         self.poll_interval_spinbox.setSingleStep(100)
 
-        self.hotkey_input = QLineEdit()
-        self.hotkey_input.setPlaceholderText("e.g., ctrl+shift+f7")
-
+        self.hotkey_input = HotkeyRecorder()
         self.click_through_checkbox = QCheckBox(CHECKBOX_CLICK_THROUGH)
 
     def _layout_widgets(self):
         """Arranges the created widgets using layouts."""
 
         main_layout = QVBoxLayout(self)
+        main_layout.setSpacing(15)
 
-        self._add_widget_with_label(main_layout, self.client_id_input, LABEL_CLIENT_ID)
-        self._add_widget_with_label(main_layout, self.redirect_uri_input, LABEL_REDIRECT_URI)
-        self._add_widget_with_label(main_layout, self.position_choice, LABEL_POSITION)
-        self._add_widget_with_label(main_layout, self.margin_spinbox, LABEL_MARGIN)
-        self._add_widget_with_label(main_layout, self.art_size_spinbox, LABEL_ART_SIZE)
-        self._add_widget_with_label(main_layout, self.poll_interval_spinbox, LABEL_POLL_INTERVAL)
-        self._add_widget_with_label(main_layout, self.hotkey_input, LABEL_HOTKEY)
-        main_layout.addWidget(self.click_through_checkbox)
+        form_layout = QFormLayout()
+        form_layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+        form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignLeft)
+        form_layout.setFormAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+        form_layout.setSpacing(10)
 
-        main_layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
+        # Auth (Read Only)
+        header_auth = QLabel("<b>Spotify Settings</b>")
+        header_auth.setStyleSheet("margin-bottom: 5px;")
+        form_layout.addRow(header_auth)
+        form_layout.addRow(LABEL_CLIENT_ID, self.client_id_input)
+        form_layout.addRow(LABEL_REDIRECT_URI, self.redirect_uri_input)
+        
+        form_layout.addRow(QLabel("")) 
+
+        # Preferences
+        header_pref = QLabel("<b>Appearance & Behavior</b>")
+        header_pref.setStyleSheet("margin-bottom: 5px;")
+        form_layout.addRow(header_pref)
+        form_layout.addRow(LABEL_POSITION, self.position_choice)
+        form_layout.addRow(LABEL_MARGIN, self.margin_spinbox)
+        form_layout.addRow(LABEL_ART_SIZE, self.art_size_spinbox)
+        form_layout.addRow(LABEL_POLL_INTERVAL, self.poll_interval_spinbox)
+        form_layout.addRow(LABEL_HOTKEY, self.hotkey_input)
+        
+        main_layout.addLayout(form_layout)
+
+        checkbox_layout = QHBoxLayout()
+        checkbox_layout.addWidget(self.click_through_checkbox)
+        checkbox_layout.addStretch()
+        main_layout.addLayout(checkbox_layout)
+
+        main_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
 
         button_layout = QHBoxLayout()
         self.reset_button = QPushButton(BUTTON_RESET)
@@ -131,14 +157,6 @@ class ConfigureWindow(QWidget):
         button_layout.addWidget(self.close_button)
         button_layout.addWidget(self.save_button)
         main_layout.addLayout(button_layout)
-
-    def _add_widget_with_label(self, layout: QVBoxLayout, widget: QWidget, label_text: str):
-        """Helper to create a labeled row in the layout."""
-
-        hbox = QHBoxLayout()
-        hbox.addWidget(QLabel(label_text))
-        hbox.addWidget(widget)
-        layout.addLayout(hbox)
 
     def _connect_signals(self):
         """Connects the button click signals to their respective handlers."""
@@ -156,7 +174,7 @@ class ConfigureWindow(QWidget):
         self.margin_spinbox.setValue(source.ui.margin)
         self.art_size_spinbox.setValue(source.ui.art_size)
         self.click_through_checkbox.setChecked(source.ui.click_through)
-        self.poll_interval_spinbox.setValue(source.poll_interval_ms)
+        self.poll_interval_spinbox.setValue(source.client.poll_interval_ms)
         self.hotkey_input.setText(source.ui.hotkey)
 
     def _on_save(self):
@@ -174,7 +192,7 @@ class ConfigureWindow(QWidget):
         self._shared_config.ui.margin = self.margin_spinbox.value()
         self._shared_config.ui.click_through = self.click_through_checkbox.isChecked()
         self._shared_config.ui.art_size = self.art_size_spinbox.value()
-        self._shared_config.poll_interval_ms = self.poll_interval_spinbox.value()
+        self._shared_config.client.poll_interval_ms = self.poll_interval_spinbox.value()
         self._shared_config.ui.hotkey = self.hotkey_input.text()
 
         # Emit the signal containing the reference to the now-modified shared object.
@@ -184,8 +202,11 @@ class ConfigureWindow(QWidget):
     def _on_reset(self):
         """Loads the default settings into the UI for preview."""
 
-        log.info("Resetting form to default values.")
+        log.info("Resetting settings to default values (preserving auth).")
         self._load_config_into_ui(self._defaults)
+
+        self.client_id_input.setText(self._shared_config.client.client_id)
+        self.redirect_uri_input.setText(self._shared_config.client.redirect_uri)
 
     @override
     def showEvent(self, event: QShowEvent):
